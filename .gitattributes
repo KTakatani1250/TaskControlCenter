@@ -1,0 +1,5 @@
+# シェルスクリプトは常に LF（WSL/bash が CRLF だと起動に失敗するため）
+*.sh text eol=lf
+# Windows 用ランチャーは CRLF
+*.cmd text eol=crlf
+*.vbs text eol=crlf

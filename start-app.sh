@@ -4,13 +4,38 @@
 set -e
 cd "$(dirname "$(readlink -f "$0")")"
 
+# 起動ログ（.vbs は画面非表示なので、失敗時はこのファイルで原因を確認する）
+LOG="start-app.log"
+exec > >(tee "$LOG") 2>&1
+echo "=== TaskControlCenter 起動: $(date) ==="
+
+# nvm 等で入れた node に PATH を通す（Windows からのコールド起動でも確実に見つける）
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1 || true
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "ERROR: node が見つかりません。WSL に Node.js を入れてください。" >&2
+  exit 1
+fi
+echo "node: $(command -v node) ($(node -v))"
+
 # WSLg のディスプレイ（未設定時のフォールバック）
 export DISPLAY="${DISPLAY:-:0}"
 export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
+echo "DISPLAY=$DISPLAY WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
 
-# 依存とビルド成果物が無ければ用意（初回のみ時間がかかる）
+# 依存が無ければ用意（初回のみ時間がかかる）
 [ -d node_modules ] || npm install
-[ -f out/main/index.js ] || npm run build
+
+# ソースが更新されていれば再ビルド（out が無い／src のほうが新しい場合）。
+# これをしないと git pull 後も古いビルドのまま起動してしまう。
+if [ ! -f out/main/index.js ] || [ -n "$(find src electron.vite.config.ts package.json -newer out/main/index.js 2>/dev/null)" ]; then
+  echo "ソース変更を検出 → 再ビルドします..."
+  npm run build
+else
+  echo "ビルドは最新です（再ビルド不要）"
+fi
 
 # アプリ起動
+echo "Electron を起動します..."
 exec ./node_modules/.bin/electron . --no-sandbox "$@"

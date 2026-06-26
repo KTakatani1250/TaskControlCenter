@@ -1,0 +1,41 @@
+appId: com.ktakatani.taskcontrolcenter
+productName: TaskControlCenter
+copyright: Copyright © 2026 KTakatani1250
+
+directories:
+  buildResources: build
+  output: dist-installer
+
+# 既定の **/* を維持しつつ開発用ファイルを除外（out/ と node_modules を確実に同梱）。
+# タスクデータは userData に別管理されるため同梱しない。
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!{.eslintrc.*,.prettierrc.*,.gitignore,README.md}'
+  - '!dist-installer/*'
+  - '!**/*.map'
+
+# better-sqlite3 等のネイティブモジュールはasarから展開
+asarUnpack:
+  - '**/*.node'
+  - node_modules/better-sqlite3/**
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${productName}-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true # デスクトップショートカット（インストーラ上で任意）
+  createStartMenuShortcut: true # スタートメニューに追加
+  menuCategory: false
+  shortcutName: TaskControlCenter
+  # アンインストール時にタスクデータを残すか削除するか選択させる
+  include: build/installer.nsh

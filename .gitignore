@@ -1,0 +1,8 @@
+node_modules/
+out/
+dist-installer/
+*.log
+.DS_Store
+.vite/
+test/*.cjs
+*.tsbuildinfo

@@ -24,6 +24,22 @@ export DISPLAY="${DISPLAY:-:0}"
 export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
 echo "DISPLAY=$DISPLAY WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
 
+# 日本語入力（IME）。WSLg では Linux 側 IME(fcitx5+mozc) が必要。
+# 環境変数は IME 未導入でも無害。fcitx5 があれば未起動時に自動で立ち上げる。
+export GTK_IM_MODULE="${GTK_IM_MODULE:-fcitx}"
+export QT_IM_MODULE="${QT_IM_MODULE:-fcitx}"
+export XMODIFIERS="${XMODIFIERS:-@im=fcitx}"
+if command -v fcitx5 >/dev/null 2>&1; then
+  if ! pgrep -x fcitx5 >/dev/null 2>&1; then
+    echo "fcitx5 を起動します..."
+    (fcitx5 -d >/dev/null 2>&1 &)
+    sleep 1
+  fi
+  echo "IME: fcitx5 稼働中"
+else
+  echo "IME: fcitx5 未インストール（日本語入力するには 'sudo apt install -y fcitx5 fcitx5-mozc' が必要）"
+fi
+
 # 依存が無ければ用意（初回のみ時間がかかる）
 [ -d node_modules ] || npm install
 

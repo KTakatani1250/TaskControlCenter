@@ -240,6 +240,29 @@ textarea {
   padding: 10px 14px;
 }
 
+/* ---- 自動高さモード（①②）：内容ベースの高さにして scrollHeight を自然高にする ---- */
+.app.autosize {
+  height: auto;
+  min-height: 0;
+}
+.app.autosize .areas {
+  flex: none;
+  overflow: visible;
+}
+.app.autosize .area,
+.app.autosize .area.focused,
+.app.autosize .area.collapsed {
+  flex: none;
+  min-height: 0;
+}
+.app.autosize .area-body {
+  flex: none;
+  overflow: visible;
+}
+.app.autosize .active-card {
+  height: auto;
+}
+
 /* ---- 進行中タスク（エリア1） ---- */
 .active-card {
   display: flex;

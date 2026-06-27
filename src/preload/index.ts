@@ -45,7 +45,11 @@ const api = {
   // データ入出力
   exportJson: (): Promise<IoResult> => ipcRenderer.invoke('io:exportJson'),
   exportCsv: (): Promise<IoResult> => ipcRenderer.invoke('io:exportCsv'),
-  importBackup: (): Promise<IoResult> => ipcRenderer.invoke('io:importBackup')
+  importBackup: (): Promise<IoResult> => ipcRenderer.invoke('io:importBackup'),
+
+  // ウィンドウ：高さを内容に合わせる（null で既定高に戻す）
+  setWindowHeight: (height: number | null): Promise<void> =>
+    ipcRenderer.invoke('window:setHeight', height)
 }
 
 contextBridge.exposeInMainWorld('api', api)

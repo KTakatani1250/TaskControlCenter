@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron'
+import { BrowserWindow, ipcMain, screen } from 'electron'
 import { exportCsv, exportJson, importBackup } from './io'
 import {
   completeTask,
@@ -66,4 +66,21 @@ export function registerIpc(): void {
   ipcMain.handle('io:exportJson', (e) => exportJson(BrowserWindow.fromWebContents(e.sender)))
   ipcMain.handle('io:exportCsv', (e) => exportCsv(BrowserWindow.fromWebContents(e.sender)))
   ipcMain.handle('io:importBackup', (e) => importBackup(BrowserWindow.fromWebContents(e.sender)))
+
+  // 表示エリア①②では内容量に合わせてウィンドウ高を変える。null は既定高に戻す。
+  ipcMain.handle('window:setHeight', (e, height: number | null) => {
+    const win = BrowserWindow.fromWebContents(e.sender)
+    if (!win || win.isDestroyed() || win.isFullScreen() || win.isMaximized()) return
+    const [w, curH] = win.getContentSize()
+    if (height == null) {
+      if (curH !== DEFAULT_CONTENT_HEIGHT) win.setContentSize(w, DEFAULT_CONTENT_HEIGHT)
+      return
+    }
+    const workH = screen.getDisplayMatching(win.getBounds()).workAreaSize.height
+    const target = Math.max(MIN_CONTENT_HEIGHT, Math.min(Math.round(height), workH))
+    if (Math.abs(curH - target) > 1) win.setContentSize(w, target)
+  })
 }
+
+const DEFAULT_CONTENT_HEIGHT = 800
+const MIN_CONTENT_HEIGHT = 160

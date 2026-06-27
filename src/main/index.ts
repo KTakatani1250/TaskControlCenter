@@ -34,7 +34,8 @@ function createWindow(): void {
     width: 1100,
     height: 800,
     minWidth: 720,
-    minHeight: 560,
+    // ①(今取り組み)など内容が少ないときに小さく畳めるよう最小高を低めにする
+    minHeight: 160,
     show: false,
     autoHideMenuBar: true,
     title: 'TaskControlCenter',

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type JSX } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type JSX } from 'react'
 import {
   DndContext,
   DragEndEvent,
@@ -77,8 +77,12 @@ export default function App(): JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [toast, setToast] = useState('')
-  // 表示フォーカス：overview=全体表示 / a1,a2,a3=その段階を拡大し他は折りたたみ
-  const [focus, setFocus] = useState<'overview' | 'a1' | 'a2' | 'a3'>('overview')
+  // 表示は常に1エリアのみ：a1=今取り組み / a2=今日中 / a3=全タスク。他は1行に折りたたみ。
+  // （「全体」同時表示は画面に収まらないため廃止）。既定は①。
+  const [focus, setFocus] = useState<'a1' | 'a2' | 'a3'>('a1')
+  const appRef = useRef<HTMLDivElement>(null)
+  // ①②は内容量が限られるため、ウィンドウ高を内容に合わせる（③は件数が多く既定高でスクロール）
+  const autosize = focus === 'a1' || focus === 'a2'
   // タグ絞り込み（両方onで両方表示）
   const [showWork, setShowWork] = useState(true)
   const [showPrivate, setShowPrivate] = useState(true)
@@ -207,12 +211,35 @@ export default function App(): JSX.Element {
         : 0)
     : 0
 
-  const collapsed = (area: 'a1' | 'a2' | 'a3'): boolean => focus !== 'overview' && focus !== area
-  const toggleFocus = (area: 'a1' | 'a2' | 'a3'): void =>
-    setFocus((f) => (f === area ? 'overview' : area))
+  const collapsed = (area: 'a1' | 'a2' | 'a3'): boolean => focus !== area
+  const focusArea = (area: 'a1' | 'a2' | 'a3'): void => setFocus(area)
+
+  // 表示エリア／内容の変化に追従してウィンドウ高を調整する。
+  // autosize 中は .app が内容ベースの高さになる（styles.css の .app.autosize）ため、
+  // scrollHeight が「自然な高さ」になる。③やそれ以外では既定高に戻す。
+  useLayoutEffect(() => {
+    const el = appRef.current
+    if (!el) return
+    if (!autosize) {
+      void window.api.setWindowHeight(null)
+      return
+    }
+    let last = 0
+    const report = (): void => {
+      const h = Math.ceil(el.scrollHeight)
+      if (h && h !== last) {
+        last = h
+        void window.api.setWindowHeight(h)
+      }
+    }
+    report()
+    const ro = new ResizeObserver(() => report())
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [autosize])
 
   return (
-    <div className="app">
+    <div className={'app' + (autosize ? ' autosize' : '')} ref={appRef}>
       <div className="topbar">
         <h1>TaskControlCenter</h1>
         {toast && <span className="reason-tag">{toast}</span>}
@@ -229,9 +256,6 @@ export default function App(): JSX.Element {
       <div className="subbar">
         <span className="subbar-label">表示：</span>
         <div className="segmented">
-          <button className={focus === 'overview' ? 'active' : ''} onClick={() => setFocus('overview')}>
-            全体
-          </button>
           <button className={focus === 'a1' ? 'active' : ''} onClick={() => setFocus('a1')}>
             ① 今取り組み
           </button>
@@ -269,7 +293,7 @@ export default function App(): JSX.Element {
             (focus === 'a1' ? ' focused' : '')
           }
         >
-          <div className="area-head clickable" onClick={() => toggleFocus('a1')}>
+          <div className="area-head clickable" onClick={() => focusArea('a1')}>
             <span className="caret">{collapsed('a1') ? '▸' : '▾'}</span>
             今取り組んでいるタスク
             {collapsed('a1') && (
@@ -323,7 +347,7 @@ export default function App(): JSX.Element {
             (focus === 'a2' ? ' focused' : '')
           }
         >
-          <div className="area-head clickable" onClick={() => toggleFocus('a2')}>
+          <div className="area-head clickable" onClick={() => focusArea('a2')}>
             <span className="caret">{collapsed('a2') ? '▸' : '▾'}</span>
             今日中に終えるべきタスク
             <span className="count">{todayTasks.length}</span>
@@ -373,7 +397,7 @@ export default function App(): JSX.Element {
             (focus === 'a3' ? ' focused' : '')
           }
         >
-          <div className="area-head clickable" onClick={() => toggleFocus('a3')}>
+          <div className="area-head clickable" onClick={() => focusArea('a3')}>
             <span className="caret">{collapsed('a3') ? '▸' : '▾'}</span>
             {showHistory ? '完了履歴' : '全タスク'}
             <span className="count">{showHistory ? completed.length : incomplete.length}</span>
